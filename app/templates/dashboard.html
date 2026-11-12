@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · POWERWISE{% endblock %}
+{% block content %}
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand-lockup" href="{{ url_for('web.dashboard') }}"><span class="brand-icon"><i class="fa-solid fa-bolt"></i></span><span>POWERWISE</span></a>
+    <div class="nav-caption">WORKSPACE</div>
+    <nav class="side-nav" aria-label="Main navigation">
+      <button class="nav-link active" data-page="overview"><i class="fa-solid fa-grid-2"></i><span>Overview</span></button>
+      <button class="nav-link" data-page="consumption"><i class="fa-solid fa-wave-square"></i><span>Consumption</span></button>
+      <button class="nav-link" data-page="appliances"><i class="fa-solid fa-plug"></i><span>Appliances</span></button>
+      <button class="nav-link" data-page="billing"><i class="fa-regular fa-file-lines"></i><span>Bill calculator</span></button>
+      <button class="nav-link" data-page="analytics"><i class="fa-solid fa-chart-column"></i><span>Analytics & reports</span></button>
+      <button class="nav-link" data-page="alerts"><i class="fa-regular fa-bell"></i><span>Alerts <span class="nav-count" id="alert-count"></span></span></button>
+      <button class="nav-link" data-page="advisor"><i class="fa-regular fa-lightbulb"></i><span>Energy advisor</span></button>
+      <button class="nav-link" data-page="settings"><i class="fa-solid fa-sliders"></i><span>Limits & devices</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="privacy-box"><i class="fa-solid fa-lock"></i><div><strong>Your data stays yours</strong><small>Private to your account</small></div></div>
+      <div class="profile-row"><span class="avatar">{{ user.name[:1]|upper }}</span><div class="profile-copy"><strong>{{ user.name }}</strong><small>{{ user.email }}</small></div><button class="icon-button" id="logout-button" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button></div>
+    </div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <button class="icon-button mobile-menu" id="menu-button" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button>
+      <div class="breadcrumb"><span>Workspace</span><i class="fa-solid fa-chevron-right"></i><strong id="page-crumb">Overview</strong></div>
+      <div class="topbar-actions"><span class="live-pill"><span></span> PERSONAL DASHBOARD</span><button class="icon-button" id="refresh-button" aria-label="Refresh data"><i class="fa-solid fa-rotate-right"></i></button></div>
+    </header>
+    <div class="page-content">
+      <div class="page-heading"><div><span class="eyebrow" id="page-eyebrow">YOUR ENERGY AT A GLANCE</span><h1 id="page-title">Good energy, {{ user.name.split(' ')[0] }}.</h1><p id="page-description">A clear view of your recorded usage and estimated energy footprint.</p></div><div class="heading-date"><i class="fa-regular fa-calendar"></i><span id="today-label"></span></div></div>
+      <div class="alert-banner d-none" id="global-error"></div>
+
+      <section class="page-panel active" id="page-overview">
+        <div class="metric-grid">
+          <article class="metric-card"><div class="metric-top"><span>Consumption this month</span><span class="metric-icon blue"><i class="fa-solid fa-bolt"></i></span></div><div class="metric-value"><strong id="metric-units">—</strong><span>kWh</span></div><div class="metric-foot"><span id="month-comparison">Waiting for readings</span><span class="metric-tag">RECORDED</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>Current power</span><span class="metric-icon green"><i class="fa-solid fa-gauge-high"></i></span></div><div class="metric-value"><strong id="metric-power">—</strong><span>W</span></div><div class="metric-foot"><span id="power-basis">Available when a reading includes power</span><span class="metric-tag muted-tag">FROM READING</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>Estimated bill</span><span class="metric-icon orange"><i class="fa-solid fa-receipt"></i></span></div><div class="metric-value"><strong id="metric-bill">—</strong></div><div class="metric-foot"><span id="bill-caption">Configure your tariff first</span><span class="metric-tag">ESTIMATE</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>Daily average</span><span class="metric-icon purple"><i class="fa-solid fa-chart-line"></i></span></div><div class="metric-value"><strong id="metric-average">—</strong><span>kWh</span></div><div class="metric-foot"><span>Month to date</span><span class="metric-tag">RECORDED</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>Monthly limit remaining</span><span class="metric-icon orange"><i class="fa-solid fa-bullseye"></i></span></div><div class="metric-value"><strong id="metric-remaining">—</strong><span>kWh</span></div><div class="metric-foot"><span id="limit-caption">Set a monthly limit in settings</span><span class="metric-tag">YOUR LIMIT</span></div></article>
+        </div>
+        <div class="chart-grid">
+          <article class="surface chart-card"><div class="card-heading"><div><h2>Daily consumption</h2><p>Recorded energy · this month</p></div><span class="chart-legend"><i></i> Recorded</span></div><div class="chart-wrap"><canvas id="daily-chart" aria-label="Daily consumption chart"></canvas></div></article>
+          <article class="surface chart-card"><div class="card-heading"><div><h2>Monthly trend</h2><p>Recent consumption history</p></div><span class="chart-legend green-legend"><i></i> Recorded</span></div><div class="chart-wrap"><canvas id="monthly-chart" aria-label="Monthly consumption chart"></canvas></div></article>
+        </div>
+        <div class="bottom-grid">
+          <article class="surface"><div class="card-heading"><div><h2>Recent readings</h2><p>Latest records across your account</p></div><button class="text-button" data-go="consumption">View all <i class="fa-solid fa-arrow-right"></i></button></div><div id="recent-readings" class="list-stack"></div></article>
+          <article class="surface"><div class="card-heading"><div><h2>Recent alerts</h2><p>Usage limit notifications</p></div><button class="text-button" data-go="alerts">View all <i class="fa-solid fa-arrow-right"></i></button></div><div id="recent-alerts" class="list-stack"></div></article>
+        </div>
+        <div class="info-note"><i class="fa-solid fa-circle-info"></i><span>Dashboard totals are based on recorded readings. Appliance use is estimated separately; no sensor or live meter is connected.</span></div>
+      </section>
+
+      <section class="page-panel" id="page-consumption">
+        <div class="two-col">
+          <article class="surface form-card"><div class="card-heading"><div><h2>Add a reading</h2><p>Enter a meter value or calculate energy from power × time.</p></div></div>
+            <form id="reading-form" class="form-grid">
+              <label>Energy (kWh)<input name="energy_kwh" type="number" min="0.001" step="0.001" placeholder="Optional if power and time provided"></label>
+              <label>Power (W)<input name="power_w" type="number" min="0.1" step="0.1" placeholder="Optional"></label>
+              <label>Duration (hours)<input name="duration_hours" type="number" min="0" max="744" step="0.1" placeholder="Optional"></label>
+              <label>Appliance<select name="appliance_id" id="reading-appliance"><option value="">No appliance</option></select></label>
+              <label>Recorded at<input name="recorded_at" type="datetime-local"></label>
+              <div class="form-actions"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-plus me-2"></i>Save reading</button><button class="btn btn-outline-light" type="button" id="show-simulate">Add simulation</button></div>
+            </form><p class="form-hint mt-3">Manual entry is user-provided data, not a sensor measurement.</p>
+          </article>
+          <article class="surface form-card"><div class="card-heading"><div><h2>Consumption history</h2><p>Filter and manage your recorded values.</p></div><button class="btn btn-sm btn-outline-light" id="download-csv"><i class="fa-solid fa-download me-2"></i>CSV</button></div><div class="filter-row"><input id="reading-start" type="date" aria-label="Start date"><input id="reading-end" type="date" aria-label="End date"><button class="btn btn-sm btn-primary" id="filter-readings">Filter</button></div><div id="readings-table"></div></article>
+        </div>
+      </section>
+
+      <section class="page-panel" id="page-appliances">
+        <div class="two-col">
+          <article class="surface form-card"><div class="card-heading"><div><h2 id="appliance-form-title">Add an appliance</h2><p>Estimated energy is separate from measured readings.</p></div></div>
+            <form id="appliance-form" class="form-grid">
+              <input name="id" type="hidden">
+              <label>Appliance name<input name="name" maxlength="100" placeholder="e.g. Air conditioner" required></label>
+              <label>Category<input name="category" maxlength="60" placeholder="e.g. Cooling" required></label>
+              <label>Rated power (W)<input name="power_w" type="number" min="0.1" step="0.1" required></label>
+              <label>Hours per day<input name="daily_hours" type="number" min="0" max="24" step="0.1" required></label>
+              <label>Quantity<input name="quantity" type="number" min="1" max="1000" value="1" required></label>
+              <label class="switch-label"><input name="is_on" type="checkbox"> Currently operating</label>
+              <div class="form-actions"><button class="btn btn-primary" type="submit">Save appliance</button><button class="btn btn-outline-light d-none" id="cancel-appliance-edit" type="button">Cancel edit</button></div>
+            </form>
+          </article>
+          <article class="surface"><div class="card-heading"><div><h2>Your appliances</h2><p>Estimated at 30 days per month.</p></div><span class="metric-tag">ESTIMATES</span></div><div id="appliance-list" class="appliance-grid"></div></article>
+        </div>
+      </section>
+
+      <section class="page-panel" id="page-billing">
+        <div class="two-col">
+          <article class="surface form-card"><div class="card-heading"><div><h2>Configure your tariff</h2><p>Enter the rates supplied by your electricity provider. No default tariff is assumed.</p></div></div>
+            <form id="tariff-form"><label class="form-label">Tariff slabs (JSON)</label><textarea class="form-control code-input" name="slabs" rows="7" spellcheck="false">[
+  {"lower_units": 0, "upper_units": 100, "rate_per_unit": 0},
+  {"lower_units": 100, "upper_units": null, "rate_per_unit": 0}
+]</textarea><p class="form-hint mt-2">Example only — replace both rates with your provider's actual rates. Slabs must be contiguous; final upper_units is null.</p><button class="btn btn-primary mt-2" type="submit">Save my tariff</button></form>
+          </article>
+          <article class="surface form-card"><div class="card-heading"><div><h2>Estimate a bill</h2><p>Progressive slab calculation based on the tariff you configure.</p></div></div>
+            <form id="bill-form" class="form-grid">
+              <label>Units consumed (kWh)<input name="units" type="number" min="0" step="0.01" required></label>
+              <label>Fixed charges<input name="fixed_charges" type="number" min="0" step="0.01" value="0"></label>
+              <label>Additional charges<input name="additional_charges" type="number" min="0" step="0.01" value="0"></label>
+              <label>Tax (%)<input name="tax_percent" type="number" min="0" max="100" step="0.01" value="0"></label>
+              <label>Period start<input name="period_start" type="date"></label><label>Period end<input name="period_end" type="date"></label>
+              <div class="form-actions"><button class="btn btn-primary" type="submit">Calculate estimate</button></div>
+            </form><div id="bill-result" class="mt-3"></div>
+          </article>
+        </div>
+        <article class="surface mt-4"><div class="card-heading"><div><h2>Bill history</h2><p>Past estimates saved to your account.</p></div></div><div id="bill-history"></div></article>
+      </section>
+
+      <section class="page-panel" id="page-analytics">
+        <article class="surface"><div class="card-heading"><div><h2>Consumption reports</h2><p>Daily, weekly, monthly and yearly rollups of recorded readings.</p></div><div class="report-actions"><select id="report-period" class="form-select"><option value="daily">Daily · 30 days</option><option value="weekly">Weekly · 12 weeks</option><option value="monthly" selected>Monthly · 12 months</option><option value="yearly">Yearly · 5 years</option></select><button class="btn btn-sm btn-outline-light" id="report-csv"><i class="fa-solid fa-download me-2"></i>Export readings</button></div></div><div class="report-summary" id="report-summary"></div><div class="chart-wrap report-chart"><canvas id="report-chart"></canvas></div><div id="appliance-analysis"></div></article>
+        <div class="info-note mt-3"><i class="fa-solid fa-circle-info"></i><span>Periods without a reading display as zero; the report does not interpolate or forecast consumption.</span></div>
+      </section>
+
+      <section class="page-panel" id="page-alerts">
+        <article class="surface"><div class="card-heading"><div><h2>Usage alerts</h2><p>Warnings are generated from your configured limits and recorded usage.</p></div></div><div id="alert-list" class="list-stack"></div></article>
+      </section>
+
+      <section class="page-panel" id="page-advisor">
+        <article class="surface"><div class="card-heading"><div><h2>Energy-saving advisor</h2><p>Rule-based suggestions from the appliance details you entered.</p></div><span class="metric-tag">ESTIMATES, NOT GUARANTEES</span></div><div id="recommendation-list" class="recommendation-grid"></div><div class="info-note mt-3"><i class="fa-solid fa-circle-info"></i><span>Suggested savings are indicative calculations, not measured outcomes or an AI forecast.</span></div></article>
+      </section>
+
+      <section class="page-panel" id="page-settings">
+        <div class="two-col">
+          <article class="surface form-card"><div class="card-heading"><div><h2>Consumption limits</h2><p>Set personal daily, weekly and monthly goals.</p></div></div><form id="limits-form" class="form-grid">
+            <label>Daily limit (kWh)<input name="daily" type="number" min="0.001" step="0.001"></label><label>Weekly limit (kWh)<input name="weekly" type="number" min="0.001" step="0.001"></label><label>Monthly limit (kWh)<input name="monthly" type="number" min="0.001" step="0.001"></label><div class="form-actions"><button class="btn btn-primary">Save limits</button></div>
+          </form><p class="form-hint mt-3">Alerts are generated at 80%, 100%, and 120% of each period's limit.</p></article>
+          <article class="surface form-card"><div class="card-heading"><div><h2>Future IoT devices</h2><p>Create a device credential for a future integration. No hardware connection is implied.</p></div></div><form id="device-form" class="input-button"><input name="name" class="form-control" maxlength="100" placeholder="Device name" required><button class="btn btn-primary">Create device</button></form><div id="device-token-result"></div><div id="device-list" class="list-stack mt-3"></div><div class="info-note mt-3"><i class="fa-solid fa-triangle-exclamation"></i><span>Tokens are shown once. Send only from trusted device firmware over HTTPS; ingestion accepts authenticated records but hardware has not been tested.</span></div></article>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="modal fade" id="confirm-modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5">Add simulated reading?</h2><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">This will save a record labelled <strong>simulated</strong>, using the values you enter. It is not a real meter reading.</div><div class="modal-footer"><button class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="confirm-simulate">Save simulation</button></div></div></div></div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

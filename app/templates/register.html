@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Create account · POWERWISE{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+{% block content %}
+<main class="auth-shell">
+  <section class="auth-brand">
+    <a class="brand-lockup" href="{{ url_for('web.home') }}"><span class="brand-icon"><i class="fa-solid fa-bolt"></i></span> POWERWISE</a>
+    <div class="auth-pitch">
+      <span class="eyebrow">A SMARTER ENERGY ROUTINE</span>
+      <h1>See the use.<br><span>Shape the future.</span></h1>
+      <p>Bring readings, appliance estimates and alerts together in one clear view.</p>
+      <div class="auth-stat"><i class="fa-solid fa-leaf"></i><span>Start with your own usage data.</span></div>
+    </div>
+    <div class="auth-footer">No fabricated sensor readings. Just useful clarity.</div>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="mobile-brand"><span class="brand-icon"><i class="fa-solid fa-bolt"></i></span> POWERWISE</div>
+      <span class="eyebrow">GET STARTED</span>
+      <h2>Create your account</h2>
+      <p class="muted">Your personal energy dashboard is a few steps away.</p>
+      <form id="auth-form" data-auth="register">
+        <label class="form-label" for="name">Your name</label>
+        <input class="form-control" id="name" name="name" autocomplete="name" maxlength="100" required>
+        <label class="form-label mt-3" for="email">Email address</label>
+        <input class="form-control" id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        <label class="form-label mt-3" for="password">Password</label>
+        <input class="form-control" id="password" name="password" type="password" minlength="10" autocomplete="new-password" required>
+        <div class="form-hint">Use at least 10 characters.</div>
+        <button class="btn btn-primary w-100 mt-4" type="submit">Create account <i class="fa-solid fa-arrow-right ms-2"></i></button>
+      </form>
+      <p class="auth-switch">Already registered? <a href="{{ url_for('web.login') }}">Sign in</a></p>
+      <p class="data-note"><i class="fa-solid fa-shield-halved"></i> Passwords are securely hashed.</p>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/auth.js') }}"></script>{% endblock %}
