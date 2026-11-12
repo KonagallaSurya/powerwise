@@ -46,6 +46,15 @@ class AuthAndIsolationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json()["error"], "not_found")
 
+    def test_static_assets_serve_from_vercel_public_directory(self):
+        css = self.client.get("/static/css/style.css")
+        javascript = self.client.get("/static/js/dashboard.js")
+        self.assertEqual(css.status_code, 200)
+        self.assertIn(b"--bg:#0b1220", css.data)
+        self.assertEqual(javascript.status_code, 200)
+        css.close()
+        javascript.close()
+
     def test_user_cannot_access_another_users_appliance(self):
         self.register("first@example.com")
         created = self.client.post("/api/appliances", json={

@@ -32,7 +32,7 @@ Flask application factory
       MySQL
 ```
 
-`app/__init__.py` configures extensions and blueprints; `app/models/` defines persisted entities; `app/routes/` contains web/auth/API handlers; `app/services/` contains calculations; `app/templates/` and `app/static/` provide the interface. All application queries for account-owned resources are scoped by the signed-in user. IoT tokens are stored as salted password hashes and the raw token is displayed only once.
+`app/__init__.py` configures extensions and blueprints; `app/models/` defines persisted entities; `app/routes/` contains web/auth/API handlers; `app/services/` contains calculations; `app/templates/` and `public/static/` provide the interface assets. All application queries for account-owned resources are scoped by the signed-in user. IoT tokens are stored as salted password hashes and the raw token is displayed only once.
 
 ## Requirements and setup (Windows / VS Code)
 
@@ -144,9 +144,25 @@ Suggested demonstration:
 6. Open analytics, change the reporting period, and download the consumption CSV.
 7. Create a future device token and explain the authenticated ingestion contract without claiming physical integration.
 
+## Deploying to Vercel
+
+The root `index.py` exports the Flask application for Vercel's Python runtime. Static assets are stored under `public/static`, served by Vercel's static CDN, and use the same `/static/...` URLs locally.
+
+1. Import `KonagallaSurya/powerwise` in Vercel and set the project root to the repository root. Vercel should detect Flask from `requirements.txt`; do not set a static output directory or a custom build command.
+2. Select Python 3.12 (also pinned in `.python-version`).
+3. Add these **Production** environment variables in the Vercel project settings before deploying:
+   - `SECRET_KEY`: a long, random secret unique to this deployment.
+   - `DATABASE_URL`: a publicly reachable managed MySQL 8 connection string using `mysql+pymysql://...`; use the database provider's TLS options and credentials.
+   - `SESSION_COOKIE_SECURE=1`.
+4. Initialize the remote MySQL database with `database/schema.sql`. The Vercel function filesystem is ephemeral; do not use SQLite as the production database.
+5. Redeploy the production branch. Verify `https://<your-domain>/health` reports `{"status":"ok","database":"connected"}` and create an account.
+
+Do not commit `.env` or paste database credentials into source or chat. A deployment cannot serve authenticated, persistent application data until its Vercel environment variables and remote MySQL database are configured.
+
 ## Production notes and limitations
 
 - Configure production secrets, HTTPS, a narrowly privileged MySQL account, backups, and appropriate network controls before deployment.
+- Vercel runs Flask as a serverless function; its local filesystem is not persistent storage. Use a remote MySQL service and configure its network access for the deployed function.
 - Dashboard averages and bills are estimates from records to date; bill estimates exclude fixed charges and taxes unless a separate bill is calculated with those inputs.
 - Appliance estimates use user-entered nameplate power and operating hours. Recommendations are rule-based and savings are indicative.
 - Forecasting, live current/voltage, utility tariff discovery, email/SMS delivery, and verified hardware integration are not implemented.
